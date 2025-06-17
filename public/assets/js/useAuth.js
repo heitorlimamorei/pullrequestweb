@@ -41,17 +41,13 @@ function useAuth() {
   };
 
   const login = async (email, password) => {
-    const response = await fetch(
-      `http://localhost:3000/users?email=${encodeURIComponent(email)}`
-    );
+    const response = await fetch(`/users?email=${encodeURIComponent(email)}`);
 
-    const users = await response.json();
+    const user = await response.json();
 
-    if (users.length == 0) {
+    if (!user) {
       throw new Error("Erro ao realizar o login");
     }
-
-    const user = users[0];
 
     const storedHash = user.password;
 
@@ -73,9 +69,7 @@ function useAuth() {
       return;
     }
 
-    const res = await fetch(
-      `http://localhost:3000/users?email=${encodeURIComponent(email)}`
-    );
+    const res = await fetch(`/users?email=${encodeURIComponent(email)}`);
     const users = await res.json();
 
     if (users.length > 0) {
@@ -84,7 +78,7 @@ function useAuth() {
 
     const hashedPassword = await hashPassword(password);
 
-    const registerRes = await fetch("http://localhost:3000/users", {
+    const registerRes = await fetch("/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -176,7 +170,7 @@ function useAuth() {
 
     const userId = session.userId;
 
-    const response = await fetch(`http://localhost:3000/users/${userId}`, {
+    const response = await fetch(`/users/${userId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updatedFields),

@@ -28,13 +28,13 @@ function useChat() {
 
     const currentMessages = getMessages();
 
-    const resp = await fetch("http://localhost:3000/chats/" + chatId);
+    const resp = await fetch("/chats/" + chatId);
 
     if (!resp.ok) throw new Error("Client Error: cannot save the new messages");
 
     const chat = await resp.json();
 
-    const updateResp = await fetch("http://localhost:3000/chats/" + chatId, {
+    const updateResp = await fetch("/chats/" + chatId, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -119,7 +119,7 @@ function useChat() {
 
     const name = `${repo} - ${formattedDate}`;
 
-    const createResp = await fetch("http://localhost:3000/chats/", {
+    const createResp = await fetch("/chats/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -144,7 +144,7 @@ function useChat() {
     const session = authStore.getSession();
     const userId = session.userId;
 
-    const resp = await fetch("http://localhost:3000/chats?userId=" + userId);
+    const resp = await fetch("/chats?userId=" + userId);
 
     if (!resp.ok) {
       throw new Error("Client Error: cannot retrive the saveds chats");
