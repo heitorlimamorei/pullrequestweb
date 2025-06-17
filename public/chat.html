@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pull Request Generator App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/assets/js/openai.js"></script>
+    <script src="/assets/js/useRouter.js"></script>
+    <script src="/assets/js/useState.js"></script>
+    <script src="/assets/js/useAuth.js"></script>
+    <script src="/assets/js/useChat.js"></script>
+    <script src="/assets/js/useChatUI.js"></script>
+    <script src="/assets/js/generateUUID.js"></script>
+    <script src="/assets/js/jobsProcessor.js"></script>
+    <script src="/assets/js/github.js"></script>
+    <script src="/assets/js/data/basePrompt.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="/assets/js/userCard.js"></script>
+
+</head>
+
+<style>
+    .selected {
+        background-color: #f3f4f6;
+        border-radius: 0.375rem;
+    }
+
+    #chat-list::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    #chat-list::-webkit-scrollbar-thumb {
+        background-color: #d1d5db;
+        border-radius: 3px;
+    }
+
+    #chat-list::-webkit-scrollbar-track {
+        background-color: transparent;
+    }
+</style>
+</head>
+
+<body class="bg-white min-h-screen flex">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white border-r h-screen fixed left-0 top-0 flex flex-col px-4 py-6 z-10">
+        <button id="new-chat-btn" class="flex items-center text-sm gap-2 text-blue-600 hover:text-blue-800 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Novo chat
+        </button>
+        <h3 class="text-xs uppercase tracking-wide text-gray-500 mb-2">Chats</h3>
+        <ul id="chat-list" class="flex-1 overflow-y-auto space-y-1 text-sm text-gray-800"></ul>
+    </aside>
+
+    <!-- Conteúdo principal -->
+    <div class="flex-1 ml-64 flex flex-col min-h-screen">
+        <nav class="w-full shadow-sm px-6 py-4 bg-white flex justify-between items-center">
+            <h1 class="text-xl font-semibold text-blue-600">Pull Request Generator</h1>
+            <div id="userContainer" class="relative"></div>
+        </nav>
+
+        <main class="flex-1 flex justify-center items-start py-10 px-4">
+            <div id="chat-container"
+                class="w-full max-w-3xl bg-gray-50 shadow-md rounded-lg p-6 flex flex-col space-y-4">
+                <div id="chat-messages" class="flex flex-col space-y-2 overflow-y-auto max-h-[70vh]"></div>
+                <form id="chat-form" class="flex space-x-2">
+                    <input type="text" id="chat-input" class="flex-1 border rounded px-4 py-2 focus:outline-none"
+                        placeholder="Digite sua mensagem...">
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Enviar</button>
+                </form>
+            </div>
+        </main>
+
+        <footer class="text-center text-sm text-gray-500 py-6">
+            © 2025 Pull Request Generator. Todos os direitos reservados.
+        </footer>
+    </div>
+
+    <script>
+        $(document).ready(async (e) => {
+            const chat = window.useChat();
+            const chatStore = window.useState();
+            const router = window.useRouter();
+            const chatUI = window.useChatUI(chat);
+
+            const chatId = router.query("chatid");
+
+            const githubClient = window.newGithub();
+            const openaiConnector = window.createOpenAIConnector(chatStore.getState("apiKeys").openai);
+
+            openaiConnector.setModel("chatgpt-4o-latest");
+            let job = {};
+
+            const queue = chatStore.getState("queue");
+            const jobsProcessor = window.newJobsProcessor(chatStore, githubClient);
+
+            $("#new-chat-btn").on("click", () => router.push("pullrequest.html"));
+
+            await chatUI.renderChatList();
+
+            if (queue.length > 0) {
+                job = queue[queue.length - 1];
+
+                let repo = job.repo;
+
+                const commits = await jobsProcessor.processNextJob();
+
+                const commitsData = commits.map((d) => {
+                    return JSON.stringify(d)
+                });
+
+                const assistantRespId = await chat.prepareChat(commitsData, repo);
+
+                await openaiConnector.send(assistantRespId, (msgId, chunck) => {
+                    chat.updateMessage(msgId, chunck)
+                }, [
+                    ...chat.getMessages().map(c => ({ role: c.role, content: c.content })),
+                ]);
+            } else {
+                await chat.loadChat(chatId);
+            }
+
+
+            $('#chat-form').on('submit', async function (e) {
+                e.preventDefault();
+                $('#feedback-form').remove();
+                const userMsg = $('#chat-input').val().trim();
+                if (!userMsg) return;
+
+                chat.addMessage('user', userMsg);
+
+                $('#chat-input').val('');
+
+                const respId = chat.addMessage('assistant', '');
+
+                await openaiConnector.send(respId, (msgId, chunck) => {
+                    chat.updateMessage(msgId, chunck)
+                }, [
+                    ...chat.getMessages().map(c => ({ role: c.role, content: c.content })),
+                    {
+                        role: "user",
+                        content: userMsg,
+                    }
+                ]);
+            });
+
+            $('#chat-messages').on('click', '#cancel-feedback', function () {
+                $('#feedback-form').remove();
+            });
+
+
+
+            $('#chat-messages').on('click', '#send-feedback', async function (e) {
+                e.preventDefault();
+
+                const msgs = chat.getMessages();
+
+                const resp = await githubClient.createPullRequest({
+                    owner: job.owner,
+                    repo: job.repo,
+                    headBranch: job.headBranch,
+                    baseBranch: job.baseBranch,
+                    title: job.headBranch,
+                    body: msgs[msgs.length - 1].content,
+                    githubToken: job.githubToken,
+                })
+
+                chat.addMessage("assistant", `✅ Pull Request criado com sucesso!
+
+        Obrigado por usar nosso serviço para automatizar seus pull requests.
+        Estamos felizes em ajudar a tornar seu fluxo de trabalho mais ágil e eficiente!
+
+        Se precisar de algo mais, estamos por aqui. 🚀
+
+🔗 Link do PR: ${resp.html_url || 'URL não disponível'}`);
+
+
+                $('#feedback-form').remove();
+
+                await chat.saveMessages();
+            });
+        })
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "pullrequestweb",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@types/uuid": "^10.0.0",
+    "drizzle-orm": "^0.44.2",
+    "hono": "^4.7.11",
+    "postgres": "^3.4.7"
+  },
+  "scripts": {
+    "dev": "bun run src/index"
+  }
+}

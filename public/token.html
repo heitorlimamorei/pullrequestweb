@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Token</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://code.jquery.com/jquery-3.7.1.js" crossorigin="anonymous"></script>
+  <script src="/assets/js/useState.js"></script>
+  <script src="/assets/js/useRouter.js"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center">
+  <main class="flex-grow flex items-center justify-center w-full">
+    <form id="token-form" class="bg-white rounded-xl shadow-lg p-8 w-full max-w-md space-y-6">
+      <h2 class="text-xl font-semibold text-gray-800 text-center">Conectar ao GitHub</h2>
+
+      <div class="space-y-2">
+        <label class="block text-sm font-medium text-gray-700" for="token">
+          GitHub Token Pessoal
+        </label>
+        <input type="password" id="token"
+          class="w-full px-4 py-2 rounded-xl bg-gray-100 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
+          placeholder="Insira seu token aqui" required />
+        <p id="error-message" class="text-red-500 text-sm hidden"></p>
+      </div>
+
+      <button type="submit"
+        class="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition duration-200">
+        Continuar
+      </button>
+    </form>
+  </main>
+
+  <script>
+    $(document).ready((e) => {
+      $('#token-form').on('submit', async (e) => {
+        e.preventDefault();
+
+        const store = window.useState();
+        const router = window.useRouter();
+
+        const token = $('#token').val().trim();
+        const errorMessage = $('#error-message');
+
+        errorMessage.addClass('hidden').text('');
+
+        if (!token) {
+          errorMessage.removeClass('hidden').text('Por favor, insira seu token.');
+          return;
+        }
+
+        const resp = await fetch('https://api.github.com/user', {
+          headers: {
+            Authorization: `token ${token}`
+          }
+        });
+
+        if (!resp.ok) {
+          errorMessage.removeClass('hidden').text('Erro ao validar o token. Verifique e tente novamente.');
+          return;
+        }
+
+        const user = await resp.json();
+
+        const expirationDate = new Date();
+        expirationDate.setDate(expirationDate.getDate() + 7);
+
+        const session = {
+          token: token,
+          email: user.email || '',
+          username: user.login,
+          expiration: expirationDate.toISOString()
+        };
+
+        store.setState('session', session);
+
+        router.push('register.html');
+
+      })
+    });
+  </script>
+</body>
+
+</html>

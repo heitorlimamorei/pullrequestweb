@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gerar Descrição de Pull Request</title>
+
+    <!-- jQuery e jQuery UI -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="/assets/js/jobsProcessor.js"></script>
+    <script src="/assets/js/useState.js"></script>
+    <script src="/assets/js/useRouter.js"></script>
+    <script src="/assets/js/useAuth.js"></script>
+    <script src="/assets/js/userCard.js"></script>
+    <script src="/assets/js/github.js"></script>
+
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+
+<body class="bg-white min-h-screen flex flex-col">
+
+    <header class="flex items-center justify-between px-6 py-4 shadow-md">
+    <h1 class="text-lg font-semibold text-blue-600">Pull Request Generator</h1>
+    <div class="flex items-center gap-4">
+      <div id="userContainer" class="relative"></div>
+    </div>
+    </header>
+
+
+    <div class="flex items-center justify-center min-h-screen bg-gray-100">
+        <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
+        <h1 class="text-2xl font-bold text-center mb-6">Gerar Descrição de Pull Request</h1>
+        
+        <!-- Seleção de organização -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium mb-1">Organização</label>
+            <select id="organizacao" class="w-full border border-gray-300 rounded-lg p-2">
+                <option value="">Selecione a organização</option>
+            </select>
+        </div>
+
+        <!-- Campo de repositório com autocomplete -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium mb-1">Repositório</label>
+            <input type="text" id="repositorio" class="w-full border border-gray-300 rounded-lg p-2"
+                placeholder="Pesquise e selecione o repositório">
+        </div>
+
+        <!-- Campos de branch base e de comparação com autocomplete -->
+        <div class="flex gap-4 mb-6">
+            <div class="w-1/2">
+                <label class="block text-sm font-medium mb-1">Branch Base</label>
+                <input type="text" id="branch_base" class="w-full border border-gray-300 rounded-lg p-2"
+                    placeholder="Pesquise e selecione a base">
+            </div>
+            <div class="w-1/2">
+                <label class="block text-sm font-medium mb-1">Branch Comparação</label>
+                <input type="text" id="branch_comparacao" class="w-full border border-gray-300 rounded-lg p-2"
+                    placeholder="Pesquise e selecione a branch">
+            </div>
+        </div>
+
+        <!-- Botões de ação -->
+        <div class="flex justify-between">
+            <button id="Submit" onclick="addData()"
+                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-xl">Gerar
+                Descrição</button>
+            <button id="Update" style="display: none;"
+                class="ml-2 w-full bg-yellow-500 text-white font-semibold py-2 rounded-xl">Atualizar</button>
+        </div>
+    </div>
+
+    <!-- JavaScript principal -->
+    <script src="./assets/js/create-pullrequest-form.js"></script>
+</body>
+
+</html>

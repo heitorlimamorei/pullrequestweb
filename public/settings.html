@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Configurações • Pull Request Generator</title>
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Core helpers already in your project -->
+    <script src="/assets/js/useRouter.js"></script>
+    <script src="/assets/js/useState.js"></script>
+    <script src="/assets/js/useAuth.js"></script>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head>
+
+<body class="bg-white text-gray-900 flex flex-col min-h-screen">
+    <!-- Navbar (mesmo header das outras páginas) -->
+    <header class="flex items-center justify-between px-6 py-4 shadow-md">
+        <h1 class="text-lg font-semibold text-blue-600">Pull Request Generator</h1>
+        <div id="userContainer" class="relative"></div>
+    </header>
+
+    <!-- Settings form -->
+    <main class="flex-1 flex flex-col items-center py-10 px-4">
+        <form id="settings-form" class="w-full max-w-md bg-gray-50 shadow-md rounded-lg p-8 flex flex-col items-center">
+            <!-- Avatar -->
+            <img id="avatar" alt="Avatar do usuário"
+                class="w-32 h-32 rounded-full object-cover mb-6 border-4 border-white shadow" />
+
+            <!-- Username -->
+            <label class="w-full mb-4">
+                <span class="block text-sm font-medium text-gray-700 mb-1">Username</span>
+                <input id="username"
+                    class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    type="text" autocomplete="off" />
+            </label>
+
+            <!-- Email (somente leitura) -->
+            <label class="w-full mb-4">
+                <span class="block text-sm font-medium text-gray-700 mb-1">E-mail</span>
+                <input id="email" class="w-full border rounded px-3 py-2 bg-gray-100 cursor-not-allowed" type="email"
+                    readonly />
+            </label>
+
+            <!-- GitHub token -->
+            <label class="w-full mb-4">
+                <span class="block text-sm font-medium text-gray-700 mb-1">Token do GitHub</span>
+                <input id="gh-token"
+                    class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    type="password" autocomplete="off" />
+            </label>
+
+            <!-- API keys section -->
+            <h2 class="self-start text-base font-semibold mt-2 mb-3">Chaves de API (IA)</h2>
+
+            <!-- OpenAI -->
+            <div class="w-full flex items-center gap-4 mb-4">
+                <img src="./assets/imgs/openai.svg" alt="Logo OpenAI" class="w-8 h-8 shrink-0" />
+                <input id="key-openai"
+                    class="flex-1 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    type="password" placeholder="Chave OpenAI" autocomplete="off" />
+            </div>
+
+            <!-- DeepSeek -->
+            <div class="w-full flex items-center gap-4 mb-4">
+                <img src="./assets/imgs/deepseek.svg" alt="Logo DeepSeek" class="w-8 h-8 shrink-0" />
+                <input id="key-deepseek"
+                    class="flex-1 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    type="password" placeholder="Chave DeepSeek" autocomplete="off" />
+            </div>
+
+            <!-- Grok -->
+            <div class="w-full flex items-center gap-4 mb-6">
+                <img src="./assets/imgs/grok.svg" alt="Logo Grok" class="w-8 h-8 shrink-0" />
+                <input id="key-grok"
+                    class="flex-1 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    type="password" placeholder="Chave Grok" autocomplete="off" />
+            </div>
+
+            <!-- Action buttons -->
+            <div class="w-full flex justify-between items-center">
+                <button type="button" id="logout-btn" class="text-red-600 hover:text-red-700 transition">Logout</button>
+                <div class="space-x-2">
+                    <button type="button" id="cancel-btn"
+                        class="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 transition">Cancelar</button>
+                    <button type="submit" id="save-btn"
+                        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">Salvar</button>
+                </div>
+            </div>
+        </form>
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center text-gray-500 text-sm py-4">
+        © 2025 Pull Request Generator. Todos os direitos reservados.
+    </footer>
+
+    <!-- Page logic -->
+    <script>
+        $(async function () {
+            const auth = window.useAuth();
+            const store = window.useState();
+            const router = window.useRouter();
+
+            /* ---------- Populate form ---------- */
+            try {
+                const session = auth.getSession();
+                const meta = await auth.getUserMetadata();
+
+                // avatar + read-only fields
+                $('#avatar').attr('src', meta.avatar);
+                $('#email').val(session.email);
+
+                // editable
+                $('#username').val(session.username);
+                $('#gh-token').val(session.token);
+
+                // stored API keys (if any)
+                const apiKeys = store.getState('apiKeys') || {};
+                $('#key-openai').val(apiKeys.openai || '');
+                $('#key-deepseek').val(apiKeys.deepseek || '');
+                $('#key-grok').val(apiKeys.grok || '');
+            } catch (err) {
+                console.error(err);
+                // força login se algo falhar
+                router.push('login.html');
+            }
+
+            /* ---------- Save ---------- */
+            $('#settings-form').on('submit', async function (e) {
+                e.preventDefault();
+
+                // Atualiza sessão local
+                const updatedSession = {
+                    ...auth.getSession(),
+                    username: $('#username').val().trim(),
+                    token: $('#gh-token').val().trim(),
+                };
+
+                await auth.updateUser({
+                    username: updatedSession.username,
+                    token: updatedSession.token
+                });
+
+                // Guardar chaves de API
+                store.setState('apiKeys', {
+                    openai: $('#key-openai').val().trim(),
+                    deepseek: $('#key-deepseek').val().trim(),
+                    grok: $('#key-grok').val().trim(),
+                });
+
+                alert('Configurações salvas com sucesso!');
+                router.push('index.html')
+            });
+
+            /* ---------- Cancel ---------- */
+            $('#cancel-btn').on('click', () => router.push('index.html'));
+
+            /* ---------- Logout ---------- */
+            $('#logout-btn').on('click', () => auth.logOut());
+        });
+    </script>
+</body>
+
+</html>

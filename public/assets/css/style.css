@@ -1,0 +1,32 @@
+/* style.css - Customizações adicionais para o Pull Request Generator */
+
+/* Exemplo: animação suave para botões */
+button {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Scroll suave para a página */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Personalização opcional para o rodapé */
+footer {
+  font-style: italic;
+}
+
+/* Customiza o botão de login se quiser algo fora do Tailwind */
+#loginBtn {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Modo responsivo específico para telas pequenas */
+@media (max-width: 640px) {
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  main p {
+    font-size: 0.9rem;
+  }
+}
