@@ -5,19 +5,11 @@
  * @param {string} [defaultModel="gpt-3.5-turbo"] - The default model to use.
  * @returns {Object} - A connector with methods to manage messages and send requests.
  */
-function createOpenAIConnector(apiKey, defaultModel = "gpt-3.5-turbo") {
+function createOpenAIConnector(apiKey, getModel, baseUrl) {
   return {
+    baseUrl,
     apiKey,
-    model: defaultModel,
     messages: [],
-
-    /**
-     * Set a different model for subsequent requests.
-     * @param {string} newModel
-     */
-    setModel(newModel) {
-      this.model = newModel;
-    },
 
     /**
      * Add a chat message to the queue.
@@ -35,19 +27,32 @@ function createOpenAIConnector(apiKey, defaultModel = "gpt-3.5-turbo") {
       this.messages = [];
     },
 
+    /**
+     * Send a message stream request to the API provider.
+     * @param {string} msgId - An identifier for the message stream.
+     * @param {function} callback - Called with each streamed delta.
+     * @param {Array} [messages] - Optional override for the messages array.
+     */
+
     async send(msgId, callback, messages) {
-      const resp = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: this.model,
-          stream: true,
-          messages: messages ? messages : this.messages,
-        }),
+
+      const headers = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${this.apiKey}`,
+      };
+
+      const body = JSON.stringify({
+        model: getModel().id,
+        stream: true,
+        messages: messages || this.messages,
       });
+
+      const resp = await fetch(baseUrl, {
+        method: "POST",
+        headers,
+        body,
+      });
+
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";

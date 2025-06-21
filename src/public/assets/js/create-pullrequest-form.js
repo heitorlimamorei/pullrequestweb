@@ -4,6 +4,7 @@
 
   // ── Dependencies ──────────────────────────────────────────────────────────
   const auth = window.useAuth();
+  const AI = window.useAI();
   const router = window.useRouter();
   const store = window.useState();
   const gh = window.newGithub(); // ← NEW: shared GitHub helpers
@@ -25,6 +26,7 @@
   const init = async () => {
     try {
       await populateOrganizations();
+      populateModels();
       bindEvents();
     } catch (err) {
       alert(err.message);
@@ -41,6 +43,17 @@
     $select.empty().append('<option value="">Select organization</option>');
     list.forEach(({ login }) =>
       $select.append(`<option value="${login}">${login}</option>`)
+    );
+  };
+
+  const populateModels = () => {
+    const models = AI.models;
+    const $select = $("#models");
+    $select
+      .empty()
+      .append('<option value="">Selecione um modelo de AI</option>');
+    models.forEach(({ id, label }) =>
+      $select.append(`<option value="${id}">${label}</option>`)
     );
   };
 
@@ -104,6 +117,7 @@
     e.preventDefault();
     if (!validateForm()) return;
 
+    AI.setModel($("#models").val().trim());
     const jobsProcessor = window.newJobsProcessor(store);
     jobsProcessor.addJob({
       owner: $("#organizacao").val().trim(),

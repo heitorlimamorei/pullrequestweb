@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Configuração de Template de PR</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <!-- Scripts auxiliares -->
+  <script src="./assets/js/useAuth.js"></script>
+  <script src="./assets/js/useState.js"></script>
+  <script src="./assets/js/useRouter.js"></script>
+  <script src="./assets/js/userCard.js"></script>
+  <script src="./assets/js/data/basePrompt.js"></script>
+  <script src="./assets/js/useChatSettings.js"></script>
+  <script src="./assets/js/generateUUID.js"></script>
+
+</head>
+
+<body class="bg-gray-100 min-h-screen flex flex-col text-gray-900">
+
+  <!-- Header -->
+  <header class="bg-white shadow px-6 py-4 flex items-center justify-between">
+    <h1 class="text-xl font-semibold text-blue-600">Configuração do PR Generator</h1>
+    <div id="userContainer" class="relative"></div>
+  </header>
+
+  <!-- Main -->
+  <main class="flex-1 flex justify-center items-start px-4 py-10">
+    <form id="config-form" class="w-full max-w-4xl bg-white rounded-lg shadow p-6 space-y-6">
+
+      <!-- Template Markdown -->
+      <div>
+        <label for="template" class="block text-sm font-medium mb-1">Template (Markdown)</label>
+        <textarea id="template" rows="10"
+          class="w-full px-3 py-2 border rounded resize-y focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Escreva aqui o markdown que será usado no pull request..."></textarea>
+
+        <div class="mt-2 flex justify-end gap-3 text-sm text-blue-600">
+          <button type="button" id="preview-btn" class="hover:underline">Pré-visualizar</button>
+          <button type="button" id="edit-btn" class="hidden hover:underline">Editar</button>
+        </div>
+
+        <div id="markdown-preview" class="prose prose-sm max-w-none mt-4 p-4 border rounded bg-gray-50 hidden"></div>
+      </div>
+
+      <!-- Prompts Personalizados -->
+      <div>
+        <label for="base_prompt" class="block text-sm font-medium mb-1">Base Prompt</label>
+        <textarea id="base_prompt" rows="4"
+          class="w-full px-3 py-2 border rounded resize-y focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Prompt base usado para orientar a IA..."></textarea>
+      </div>
+
+      <div>
+        <label for="analysis_prompt" class="block text-sm font-medium mb-1">Analysis Prompt</label>
+        <textarea id="analysis_prompt" rows="4"
+          class="w-full px-3 py-2 border rounded resize-y focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Instruções para análise dos commits..."></textarea>
+      </div>
+
+      <div>
+        <label for="description_prompt" class="block text-sm font-medium mb-1">Description Prompt</label>
+        <textarea id="description_prompt" rows="4"
+          class="w-full px-3 py-2 border rounded resize-y focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Instruções para gerar a descrição do PR..."></textarea>
+      </div>
+
+      <div class="flex justify-between">
+        <div class="flex gap-3">
+          <!-- Botão Cancelar -->
+          <button type="button" id="cancel-btn" class="text-gray-600 hover:text-gray-900 px-4 py-2 rounded transition">
+            Cancelar
+          </button>
+
+          <!-- Botão Limpar -->
+          <button type="button" id="reset-btn" class="text-red-600 hover:text-red-800 px-4 py-2 rounded transition">
+            Limpar
+          </button>
+        </div>
+
+        <!-- Botão Salvar -->
+        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
+          Salvar Configuração
+        </button>
+      </div>
+    </form>
+  </main>
+
+  <!-- Footer -->
+  <footer class="text-center text-sm text-gray-500 py-4">
+    © 2025 Pull Request Generator. Todos os direitos reservados.
+  </footer>
+
+  <script>
+    $(document).ready(async function () {
+      const auth = window.useAuth();
+      const router = window.useRouter();
+
+      const chatSettingsStore = window.useChatSettings();
+
+      // Carrega configurações salvas ou usa as padrão
+      async function loadConfig() {
+        const userId = auth.getSession().userId;
+        const savedConfig = await chatSettingsStore.getPromptSettigs(userId, 'JSON');
+
+        $('#template').val(savedConfig.template);
+        $('#base_prompt').val(savedConfig.basePrompt);
+        $('#analysis_prompt').val(savedConfig.analysisPrompt);
+        $('#description_prompt').val(savedConfig.descriptionPrompt);
+      }
+
+      // Carrega as configurações ao iniciar
+      await loadConfig();
+
+      // Preview
+      $('#preview-btn').on('click', () => {
+        const html = marked.parse($('#template').val());
+        $('#markdown-preview').html(html).removeClass('hidden');
+        $('#template').addClass('hidden');
+        $('#preview-btn').addClass('hidden');
+        $('#edit-btn').removeClass('hidden');
+      });
+
+      // Editar
+      $('#edit-btn').on('click', () => {
+        $('#markdown-preview').addClass('hidden');
+        $('#template').removeClass('hidden');
+        $('#edit-btn').addClass('hidden');
+        $('#preview-btn').removeClass('hidden');
+      });
+
+      // Cancelar: volta para tela de chat
+      $('#cancel-btn').on('click', () => {
+        router.push("chat.html");
+      });
+
+      // Limpar: reseta para padrões salvos
+      $('#reset-btn').on('click', async () => {
+        const confirmReset = confirm("Você tem certeza que deseja limpar os campos e restaurar os padrões?");
+        if (confirmReset) {
+          await loadConfig();
+        }
+      });
+
+      // Salvar
+      $('#config-form').on('submit', async function (e) {
+        e.preventDefault();
+
+        try {
+          await chatSettingsStore.updateChatSettings({
+            template: $('#template').val(),
+            basePrompt: $('#base_prompt').val(),
+            analysisPrompt: $('#analysis_prompt').val(),
+            descriptionPrompt: $('#description_prompt').val(),
+          }
+          );
+
+          alert('Configuração salva com sucesso!');
+
+          router.push("pullrequest.html")
+        } catch (error) {
+          console.error('Erro ao salvar configuração:', error);
+          alert('Erro ao salvar configuração. Verifique o console para detalhes.');
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

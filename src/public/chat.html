@@ -6,18 +6,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pull Request Generator App</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="/assets/js/openai.js"></script>
-    <script src="/assets/js/useRouter.js"></script>
-    <script src="/assets/js/useState.js"></script>
-    <script src="/assets/js/useAuth.js"></script>
-    <script src="/assets/js/useChat.js"></script>
-    <script src="/assets/js/useChatUI.js"></script>
-    <script src="/assets/js/generateUUID.js"></script>
-    <script src="/assets/js/jobsProcessor.js"></script>
-    <script src="/assets/js/github.js"></script>
-    <script src="/assets/js/data/basePrompt.js"></script>
+    <script src="./assets/js/openai.js"></script>
+    <script src="./assets/js/useRouter.js"></script>
+    <script src="./assets/js/useState.js"></script>
+    <script src="./assets/js/useAuth.js"></script>
+    <script src="./assets/js/useChat.js"></script>
+    <script src="./assets/js/useChatUI.js"></script>
+    <script src="./assets/js/generateUUID.js"></script>
+    <script src="./assets/js/jobsProcessor.js"></script>
+    <script src="./assets/js/github.js"></script>
+    <script src="./assets/js/data/basePrompt.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="/assets/js/userCard.js"></script>
+    <script src="assets/js/userCard.js"></script>
+    <script src="./assets/js/useChatSettings.js"></script>
+    <script src="assets/js/data/models.js"></script>
+    <script src="assets/js/useAI.js"></script>
+
 
 </head>
 
@@ -40,11 +44,20 @@
         background-color: transparent;
     }
 </style>
-</head>
+
 
 <body class="bg-white min-h-screen flex">
     <!-- Sidebar -->
     <aside class="w-64 bg-white border-r h-screen fixed left-0 top-0 flex flex-col px-4 py-6 z-10">
+        <button id="edit-prompt-btn"
+            class="flex items-center gap-2 w-full px-3 py-2 mb-4 border border-gray-300 rounded hover:bg-gray-100 text-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M11.25 2.25c.621 0 1.129.454 1.214 1.07l.088.705a8.261 8.261 0 012.13.883l.61-.353a1.22 1.22 0 011.632.434l1.5 2.598a1.22 1.22 0 01-.434 1.632l-.61.353a8.305 8.305 0 010 1.767l.61.353c.58.335.778 1.07.434 1.632l-1.5 2.598a1.22 1.22 0 01-1.632.434l-.61-.353a8.261 8.261 0 01-2.13.883l-.088.705a1.223 1.223 0 01-1.214 1.07h-3a1.223 1.223 0 01-1.214-1.07l-.088-.705a8.261 8.261 0 01-2.13-.883l-.61.353a1.22 1.22 0 01-1.632-.434l-1.5-2.598a1.22 1.22 0 01.434-1.632l.61-.353a8.305 8.305 0 010-1.767l-.61-.353a1.22 1.22 0 01-.434-1.632l1.5-2.598a1.22 1.22 0 011.632-.434l.61.353a8.261 8.261 0 012.13-.883l.088-.705A1.223 1.223 0 018.25 2.25h3zM12 15a3 3 0 100-6 3 3 0 000 6z" />
+            </svg>
+            Editar Prompt
+        </button>
         <button id="new-chat-btn" class="flex items-center text-sm gap-2 text-blue-600 hover:text-blue-800 mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor">
@@ -67,6 +80,8 @@
             <div id="chat-container"
                 class="w-full max-w-3xl bg-gray-50 shadow-md rounded-lg p-6 flex flex-col space-y-4">
                 <div id="chat-messages" class="flex flex-col space-y-2 overflow-y-auto max-h-[70vh]"></div>
+                <!-- Opções serão adicionadas via JS -->
+
                 <form id="chat-form" class="flex space-x-2">
                     <input type="text" id="chat-input" class="flex-1 border rounded px-4 py-2 focus:outline-none"
                         placeholder="Digite sua mensagem...">
@@ -86,19 +101,20 @@
             const chatStore = window.useState();
             const router = window.useRouter();
             const chatUI = window.useChatUI(chat);
+            const githubClient = window.newGithub();
 
             const chatId = router.query("chatid");
 
-            const githubClient = window.newGithub();
-            const openaiConnector = window.createOpenAIConnector(chatStore.getState("apiKeys").openai);
+            const AI = window.useAI();
+            const connector = AI.getConnector();
 
-            openaiConnector.setModel("chatgpt-4o-latest");
             let job = {};
 
             const queue = chatStore.getState("queue");
             const jobsProcessor = window.newJobsProcessor(chatStore, githubClient);
 
             $("#new-chat-btn").on("click", () => router.push("pullrequest.html"));
+            $("#edit-prompt-btn").on("click", () => router.push("editor.html"));
 
             await chatUI.renderChatList();
 
@@ -115,7 +131,7 @@
 
                 const assistantRespId = await chat.prepareChat(commitsData, repo);
 
-                await openaiConnector.send(assistantRespId, (msgId, chunck) => {
+                await connector.send(assistantRespId, (msgId, chunck) => {
                     chat.updateMessage(msgId, chunck)
                 }, [
                     ...chat.getMessages().map(c => ({ role: c.role, content: c.content })),
@@ -137,7 +153,7 @@
 
                 const respId = chat.addMessage('assistant', '');
 
-                await openaiConnector.send(respId, (msgId, chunck) => {
+                await connector.send(respId, (msgId, chunck) => {
                     chat.updateMessage(msgId, chunck)
                 }, [
                     ...chat.getMessages().map(c => ({ role: c.role, content: c.content })),

@@ -2,6 +2,7 @@ function useChat() {
   const store = window.useState();
   const authStore = window.useAuth();
   const router = window.useRouter();
+  const chatSettings = window.useChatSettings();
 
   const NewMessage = (role, content, shouldDisplay) => {
     const id = window.generateUUID();
@@ -28,13 +29,13 @@ function useChat() {
 
     const currentMessages = getMessages();
 
-    const resp = await fetch("/chats/" + chatId);
+    const resp = await fetch("http://localhost:3000/chats/" + chatId);
 
     if (!resp.ok) throw new Error("Client Error: cannot save the new messages");
 
     const chat = await resp.json();
 
-    const updateResp = await fetch("/chats/" + chatId, {
+    const updateResp = await fetch("http://localhost:3000/chats/" + chatId, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -93,18 +94,23 @@ function useChat() {
   };
 
   const prepareChat = async (commitsData, repo) => {
+    const session = authStore.getSession();
+
     clear();
 
     const prompt = `Gerar uma descrição de pull request a partir das seguintes mensagens de commit:\n\n${commitsData.join(
       "\n"
     )}`;
 
-    addContextMessage("system", window.basePrompt());
+    const basePrompt = await chatSettings.getPromptSettigs(
+      session.userId,
+      "string"
+    );
+
+    addContextMessage("system", basePrompt);
     addContextMessage("user", prompt);
 
     const assistantRespId = addMessage("assistant", " ");
-
-    const session = authStore.getSession();
 
     const generatedID = window.generateUUID();
 
@@ -119,7 +125,7 @@ function useChat() {
 
     const name = `${repo} - ${formattedDate}`;
 
-    const createResp = await fetch("/chats/", {
+    const createResp = await fetch("http://localhost:3000/chats/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -144,7 +150,7 @@ function useChat() {
     const session = authStore.getSession();
     const userId = session.userId;
 
-    const resp = await fetch("/chats?userId=" + userId);
+    const resp = await fetch("http://localhost:3000/chats?userId=" + userId);
 
     if (!resp.ok) {
       throw new Error("Client Error: cannot retrive the saveds chats");
@@ -201,6 +207,6 @@ function useChat() {
     getChats,
     loadChat,
     saveMessages,
-    getChatId
+    getChatId,
   };
 }

@@ -41,13 +41,17 @@ function useAuth() {
   };
 
   const login = async (email, password) => {
-    const response = await fetch(`/users?email=${encodeURIComponent(email)}`);
+    const response = await fetch(
+      `http://localhost:3000/users?email=${encodeURIComponent(email)}`
+    );
 
-    const user = await response.json();
+    const users = await response.json();
 
-    if (!user) {
+    if (users.length == 0) {
       throw new Error("Erro ao realizar o login");
     }
+
+    const user = users[0];
 
     const storedHash = user.password;
 
@@ -69,7 +73,9 @@ function useAuth() {
       return;
     }
 
-    const res = await fetch(`/users?email=${encodeURIComponent(email)}`);
+    const res = await fetch(
+      `http://localhost:3000/users?email=${encodeURIComponent(email)}`
+    );
     const users = await res.json();
 
     if (users.length > 0) {
@@ -78,7 +84,7 @@ function useAuth() {
 
     const hashedPassword = await hashPassword(password);
 
-    const registerRes = await fetch("/users", {
+    const registerRes = await fetch("http://localhost:3000/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -93,7 +99,13 @@ function useAuth() {
       return false;
     }
 
-    await login(email, password);
+    const user = await login(email, password);
+
+    if (window.useChatSettings) {
+      const chatSettingsStore = window.useChatSettings();
+
+      await chatSettingsStore.setupDefaultSettings(user.id);
+    }
 
     return true;
   };
@@ -137,7 +149,6 @@ function useAuth() {
     ) {
       router.push("login.html");
     }
-
     if (!session) return null;
 
     const now = new Date();
@@ -145,7 +156,7 @@ function useAuth() {
 
     if (now > expiration) {
       store.setState("session", null);
-      router.push("login.html");
+      router.push("index.html");
 
       return null;
     }
@@ -170,7 +181,7 @@ function useAuth() {
 
     const userId = session.userId;
 
-    const response = await fetch(`/users/${userId}`, {
+    const response = await fetch(`http://localhost:3000/users/${userId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updatedFields),

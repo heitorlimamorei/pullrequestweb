@@ -3,6 +3,8 @@ import { serveStatic } from "hono/bun";
 import { FirebaseService } from "./services/resources/firebase";
 import { UserService } from "./services/user.service";
 import { userHandlers } from "./handlers/user.handler";
+import { ChatServices } from "./services/chat.service";
+import { chatHandlers } from "./handlers/chat.handler";
 
 const HOST = Bun.env.HOST ?? "0.0.0.0";
 const PORT = Number.parseInt(Bun.env.PORT ?? "3000", 10);
@@ -22,9 +24,13 @@ app.get("*", serveStatic({ root: "./public" }));
 
 const firebaseResource = new FirebaseService();
 const usersService = new UserService(firebaseResource);
+const chatServices = new ChatServices(firebaseResource);
+
+const chatsHandlers = chatHandlers(chatServices);
 const usersHandlers = userHandlers(usersService);
 
 app.route("/users", usersHandlers);
+app.route("/chats", chatsHandlers);
 
 Bun.serve({
   hostname: HOST,

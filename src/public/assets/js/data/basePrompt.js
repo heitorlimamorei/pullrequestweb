@@ -13,4 +13,9 @@ const readBasePrompt = () => {
   return `${config.base_prompt} ${config.analysis_prompt} ${config.description_prompt}: ${config.template}`;
 };
 
+const getPromptSettigs = () => {
+  return config;
+};
+
 window.basePrompt = readBasePrompt;
+window.getPromptSettigs = getPromptSettigs;
