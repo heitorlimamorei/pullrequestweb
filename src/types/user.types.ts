@@ -14,3 +14,8 @@ export type NewUserType = {
   username: string;
   password: string;
 };
+
+export type LoginPaylod = {
+  email: string;
+  password: string;
+};

@@ -1,6 +1,7 @@
 import type { NewUserType, UserType } from "../types/user.types";
 
 export interface IUserService {
+  login(email: string, password: string): Promise<UserType>;
   create(user: NewUserType): Promise<string>;
   findByEmail(email: string): Promise<UserType>;
   find(id: string): Promise<UserType>;
@@ -8,7 +9,8 @@ export interface IUserService {
   update(id: string, fields: any): Promise<void>;
 }
 
-import type { FirebaseService } from "./resources/firebase";
+import type { FirebaseService } from "../resources/firebase";
+import passwords from "../resources/utils/passwords";
 
 export class UserService implements IUserService {
   constructor(private firebaseService: FirebaseService) {}
@@ -16,9 +18,23 @@ export class UserService implements IUserService {
   private readonly COLLECTION = "users";
 
   async create(user: NewUserType): Promise<string> {
+    const users = await this.firebaseService.findAll<UserType>({
+      collection: this.COLLECTION,
+      query: [{ field: "email", condition: "==", value: user.email }],
+    });
+
+    if (users.length > 0) {
+      throw new Error("This user is already registered");
+    }
+
+    const hashedPassword = await passwords.hashPassword(user.password);
+
     return this.firebaseService.create({
       collection: this.COLLECTION,
-      payload: user,
+      payload: {
+        ...user,
+        hashedPassword,
+      },
     });
   }
 
@@ -56,5 +72,15 @@ export class UserService implements IUserService {
       id,
       payload: fields,
     });
+  }
+
+  async login(email: string, password: string): Promise<UserType> {
+    const user = await this.findByEmail(email);
+
+    if (!passwords.comparePassword(password, user.password)) {
+      throw new Error("The provider password does not match");
+    }
+
+    return user;
   }
 }

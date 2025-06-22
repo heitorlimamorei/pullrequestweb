@@ -27,7 +27,7 @@ import {
 } from "./types";
 import { PromiseScheduler } from "../utils/promises";
 import sanitilizeArrayData from "../utils/firebase";
-import { AppConfig } from "../../../config";
+import { AppConfig } from "../../config";
 
 export class FirebaseService {
   private db: Firestore;

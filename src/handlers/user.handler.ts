@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import type { UserService } from "../services/user.service";
-import type { NewUserType } from "../types/user.types";
+import type { LoginPaylod, NewUserType } from "../types/user.types";
 
 export function userHandlers(userService: UserService) {
   const app = new Hono();
@@ -54,6 +54,18 @@ export function userHandlers(userService: UserService) {
       return c.json(user);
     } catch (e: any) {
       return c.json({ error: e.message }, 404);
+    }
+  });
+
+  app.post("login", async (c) => {
+    try {
+      const payload = await c.req.json<LoginPaylod>();
+
+      const user = await userService.login(payload.email, payload.password);
+
+      return c.json(user);
+    } catch (e: any) {
+      return c.json({ error: e.message }, 400);
     }
   });
 

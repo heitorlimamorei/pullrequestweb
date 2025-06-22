@@ -9,7 +9,7 @@ export interface IChatServices {
   findMessages(chatId: string): Promise<MessageType[]>;
 }
 
-import type { FirebaseService } from "./resources/firebase";
+import type { FirebaseService } from "../resources/firebase";
 
 export class ChatServices implements IChatServices {
   constructor(private firebaseService: FirebaseService) {}
