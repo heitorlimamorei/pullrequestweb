@@ -13,7 +13,6 @@ function useChatSettings() {
     const initialChatSettings = window.getPromptSettigs();
 
     const payload = {
-      id: window.generateUUID(),
       userId: userId,
       template: initialChatSettings?.template,
       basePrompt: initialChatSettings?.base_prompt,
@@ -21,7 +20,7 @@ function useChatSettings() {
       descriptionPrompt: initialChatSettings?.description_prompt,
     };
 
-    const resp = await fetch("http://localhost:3000/chatSettings", {
+    const resp = await fetch("/api/chatSettings", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -44,7 +43,7 @@ function useChatSettings() {
     }
 
     const resp = await fetch(
-      "http://localhost:3000/chatSettings?userId=" + userId,
+      "/api/chatSettings/" + userId,
       {
         method: "GET",
         headers: {
@@ -63,12 +62,14 @@ function useChatSettings() {
   };
 
   const updateChatSettings = async (payload) => {
+    const settings = await getPromptSettigs(payload.userId, "JSON");
+
     const cachedSettings = {
-      ...getCachedChatSettings(),
+      ...settings,
       ...payload,
     };
 
-    await fetch("http://localhost:3000/chatSettings/" + cachedSettings.id, {
+    await fetch("/api/chatSettings/" + cachedSettings.id, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",

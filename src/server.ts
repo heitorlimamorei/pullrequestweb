@@ -33,9 +33,9 @@ const chatsHandlers = chatHandlers(chatServices);
 const usersHandlers = userHandlers(usersService);
 const chatSettings = chatSettingsHandlers(chatSettinsSercice);
 
-app.route("/users", usersHandlers);
-app.route("/chats", chatsHandlers);
-app.route("/chat-settings", chatSettings);
+app.route("/api/users", usersHandlers);
+app.route("/api/chats", chatsHandlers);
+app.route("/api/chatSettings", chatSettings);
 
 Bun.serve({
   hostname: HOST,

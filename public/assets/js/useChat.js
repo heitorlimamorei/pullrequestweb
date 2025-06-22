@@ -1,3 +1,11 @@
+const sortByCreatedAtDesc = (items) => {
+  return items.sort((a, b) => {
+    const dateA = new Date(a.createdAt).getTime();
+    const dateB = new Date(b.createdAt).getTime();
+    return dateA - dateB;
+  });
+};
+
 function useChat() {
   const store = window.useState();
   const authStore = window.useAuth();
@@ -6,7 +14,7 @@ function useChat() {
 
   const NewMessage = (role, content, shouldDisplay) => {
     const id = window.generateUUID();
-    return { id, role, content, shouldDisplay };
+    return { id, role, content, shouldDisplay, createdAt: new Date() };
   };
 
   const getChatId = () => {
@@ -27,21 +35,12 @@ function useChat() {
   const saveMessages = async () => {
     const chatId = getChatId();
 
-    const currentMessages = getMessages();
+    const currentMessages = sortByCreatedAtDesc(getMessages());
 
-    const resp = await fetch("http://localhost:3000/chats/" + chatId);
-
-    if (!resp.ok) throw new Error("Client Error: cannot save the new messages");
-
-    const chat = await resp.json();
-
-    const updateResp = await fetch("http://localhost:3000/chats/" + chatId, {
-      method: "PUT",
+    const updateResp = await fetch(`/api/chats/${chatId}/messages`, {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...chat,
-        messages: [...currentMessages],
-      }),
+      body: JSON.stringify(currentMessages.filter((c) => c.shouldDisplay)),
     });
 
     if (!updateResp.ok)
@@ -112,8 +111,6 @@ function useChat() {
 
     const assistantRespId = addMessage("assistant", " ");
 
-    const generatedID = window.generateUUID();
-
     const now = new Date();
     const formattedDate = now.toLocaleString("pt-BR", {
       day: "2-digit",
@@ -125,15 +122,21 @@ function useChat() {
 
     const name = `${repo} - ${formattedDate}`;
 
-    const createResp = await fetch("http://localhost:3000/chats/", {
+    const createResp = await fetch("/api/chats", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        id: generatedID,
-        userId: session.userId,
-        name,
-        messages: [...getMessages()],
-        createdAt: now,
+        chat: {
+          userId: session.userId,
+          name,
+        },
+        messages: [
+          ...getMessages().map((m) => ({
+            content: m.content,
+            role: m.role,
+            shouldDisplay: m.id,
+          })),
+        ],
       }),
     });
 
@@ -141,7 +144,9 @@ function useChat() {
       throw new Error("Client error: cannot create a new chat");
     }
 
-    store.setState("chat-id", generatedID);
+    const { id } = await createResp.json();
+
+    store.setState("chat-id", id);
 
     return assistantRespId;
   };
@@ -150,7 +155,7 @@ function useChat() {
     const session = authStore.getSession();
     const userId = session.userId;
 
-    const resp = await fetch("http://localhost:3000/chats?userId=" + userId);
+    const resp = await fetch("/api/chats?userId=" + userId);
 
     if (!resp.ok) {
       throw new Error("Client Error: cannot retrive the saveds chats");
@@ -162,15 +167,13 @@ function useChat() {
   };
 
   const getSavedMessages = async (chatId) => {
-    const chats = await getChats();
-    const chat = chats.find((c) => c.id == chatId);
+    const messagesRep = await fetch(`/api/chats/${chatId}/messages`);
 
-    if (!chat)
-      throw new Error("Client error: cannot recovery the required chat");
+    if (!messagesRep.ok) {
+      throw new Error("Client Error: cannot retrive the requested messags");
+    }
 
-    const messages = chat.messages;
-
-    return messages || [];
+    return (await messagesRep.json()) || [];
   };
 
   const loadChat = async (inputId) => {

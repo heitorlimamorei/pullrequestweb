@@ -30,7 +30,7 @@ function useAuth() {
   };
 
   const login = async (email, password) => {
-    const response = await fetch(`/users/login`, {
+    const response = await fetch(`/api/users/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -58,7 +58,7 @@ function useAuth() {
       return;
     }
 
-    const registerRes = await fetch("/users", {
+    const registerRes = await fetch("/api/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -140,6 +140,12 @@ function useAuth() {
 
   const logOut = () => {
     localStorage.removeItem("session");
+    localStorage.removeItem("current-ai-model");
+    localStorage.removeItem("chat-id");
+    localStorage.removeItem("apiKeys");
+    localStorage.removeItem("chat-messages");
+    localStorage.removeItem("chatSettings");
+
     setTimeout(() => {
       router.push("index.html");
     }, 1000);
@@ -155,7 +161,7 @@ function useAuth() {
 
     const userId = session.userId;
 
-    const response = await fetch(`/users/${userId}`, {
+    const response = await fetch(`/api/users/${userId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updatedFields),

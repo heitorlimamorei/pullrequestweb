@@ -49,7 +49,7 @@ export function chatHandlers(chatService: ChatServices) {
 
   // Seed de mensagens (caso precise em outra rota separada)
   app.post("/:chatId/messages", async (c) => {
-    const chatId = c.req.param("chatId");
+    const chatId = c.req.param("chatId");    
     try {
       const messages = await c.req.json<NewMessageType[]>();
       await chatService.seedMessages(messages, chatId);

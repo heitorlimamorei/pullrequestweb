@@ -153,6 +153,7 @@
 
         try {
           await chatSettingsStore.updateChatSettings({
+            userId: auth.getSession().userId,
             template: $('#template').val(),
             basePrompt: $('#base_prompt').val(),
             analysisPrompt: $('#analysis_prompt').val(),

@@ -34,9 +34,10 @@ function useState() {
       if (!result) {
         throw new Error("Client error: cannot clear a undefined state");
       }
+
+      localStorage.setItem(key, JSON.stringify(null));
     },
   };
 }
-
 
 window.useState = useState;
