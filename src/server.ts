@@ -13,7 +13,6 @@ const PORT = Number.parseInt(Bun.env.PORT ?? "3000", 10);
 
 const app = new Hono();
 
-app.get("/api/hello", (c) => c.json({ message: "Hello from Bun + Hono! 🎉" }));
 
 app.get("/assets/*", serveStatic({ root: "./public" }));
 

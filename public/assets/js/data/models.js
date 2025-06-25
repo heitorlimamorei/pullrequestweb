@@ -1,7 +1,7 @@
 function getModels() {
   return [
     {
-      id: "gpt-4o-2024-08-06",
+      id: "gpt-4o-2024-11-20",
       label: "GPT-4o",
       provider: "openai",
     },
@@ -29,12 +29,7 @@ function getModels() {
       id: "deepseek-chat",
       label: "DeepSeek Chat",
       provider: "deepseek",
-    },
-    {
-      id: "deepseek-coder",
-      label: "DeepSeek Coder",
-      provider: "deepseek",
-    },
+    }
   ];
 }
 
